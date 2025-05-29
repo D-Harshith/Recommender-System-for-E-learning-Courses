@@ -1,0 +1,146 @@
+# E-Learning Course Recommendation System
+
+## Project Overview
+This project implements a content-based recommendation system for e-learning courses using a dataset from Coursera. The system recommends courses based on similarity in course names, descriptions, skills, and difficulty levels. It leverages natural language processing (NLP) techniques, including text preprocessing, stemming, and vectorization, to create a similarity matrix for course recommendations.
+
+## Dataset
+The dataset (`Coursera.csv`) contains information about Coursera courses with the following columns:
+- **Course Name**: Name of the course.
+- **University**: Institution offering the course.
+- **Difficulty Level**: Course difficulty (e.g., Beginner, Intermediate, Advanced).
+- **Course Rating**: Numerical rating of the course.
+- **Course URL**: URL to the course page.
+- **Course Description**: Description of the course content.
+- **Skills**: Skills associated with the course.
+
+For the recommendation system, only `Course Name`, `Difficulty Level`, `Course Description`, and `Skills` are used, as `University`, `Course Rating`, and `Course URL` were deemed irrelevant or potentially biased.
+
+## Dependencies
+- Python 3.11
+- Libraries:
+  - `pandas`
+  - `numpy`
+  - `matplotlib`
+  - `nltk`
+  - `scikit-learn`
+
+Install dependencies using:
+```bash
+pip install pandas numpy matplotlib nltk scikit-learn
+```
+
+Download NLTK data:
+```python
+import nltk
+nltk.download('punkt')
+```
+
+## Methodology
+1. **Data Preprocessing**:
+   - Selected relevant columns: `Course Name`, `Difficulty Level`, `Course Description`, and `Skills`.
+   - Replaced spaces with commas in `Course Name` and `Course Description` for consistency.
+   - Removed special characters (e.g., parentheses, colons) from `Course Description` and `Skills`.
+   - Created a `tags` column by concatenating `Course Name`, `Difficulty Level`, `Course Description`, and `Skills`.
+   - Replaced commas with spaces in `tags` and `Course Name`, converted `tags` to lowercase, and applied stemming using NLTK's Porter Stemmer.
+
+2. **Vectorization**:
+   - Used `CountVectorizer` from `scikit-learn` with a maximum of 5,000 features and English stop words removed to convert `tags` into a numerical matrix.
+   - Computed a cosine similarity matrix to measure similarity between courses.
+
+3. **Recommendation Function**:
+   - The `recommend` function takes a course name as input, finds its index in the dataset, and retrieves the top 6 most similar courses based on cosine similarity scores.
+   - Handles cases where the input course is not found by listing available course names.
+
+## Usage
+1. Ensure the dataset (`Coursera.csv`) is in the same directory as the script.
+2. Run the Jupyter Notebook (`Recommender System for E-learning Courses.ipynb`) or execute the following consolidated Python script:
+
+```python
+import pandas as pd
+import nltk
+nltk.download('punkt')
+from nltk.stem.porter import PorterStemmer
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
+
+# Load and preprocess data
+df = pd.read_csv("Coursera.csv")
+df = df[['Course Name', 'Difficulty Level', 'Course Description', 'Skills']]
+df['Course Name'] = df['Course Name'].str.replace(' ', ',').str.replace(',,',',').str.replace(':','')
+df['Course Description'] = df['Course Description'].str.replace(' ', ',').str.replace(',,',',').str.replace('_','').str.replace(':','').str.replace('(','').str.replace(')','')
+df['Skills'] = df['Skills'].str.replace('(','').str.replace(')','')
+df['tags'] = df['Course Name'] + df['Difficulty Level'] + df['Course Description'] + df['Skills']
+
+# Prepare new_df
+new_df = df[['Course Name', 'tags']].copy()
+new_df['tags'] = new_df['tags'].str.replace(',', ' ')
+new_df['Course Name'] = new_df['Course Name'].str.replace(',', ' ')
+new_df = new_df.rename(columns={'Course Name': 'course_name'})
+new_df['tags'] = new_df['tags'].astype(str).apply(lambda x: x.lower())
+
+# Apply stemming
+ps = PorterStemmer()
+def stem(text):
+    return " ".join([ps.stem(i) for i in text.split()])
+new_df['tags'] = new_df['tags'].apply(stem)
+
+# Vectorization and similarity
+cv = CountVectorizer(max_features=5000, stop_words='english')
+vectors = cv.fit_transform(new_df['tags']).toarray()
+similarity = cosine_similarity(vectors)
+
+# Recommendation function
+def recommend(course):
+    try:
+        if course not in new_df['course_name'].values:
+            print(f"Course '{course}' not found in the dataset.")
+            print("Available courses:", new_df['course_name'].tolist())
+            return
+        course_index = new_df[new_df['course_name'] == course].index[0]
+        distances = similarity[course_index]
+        course_list = sorted(list(enumerate(distances)), reverse=True, key=lambda x: x[1])[1:7]
+        print(f"Recommendations for '{course}':")
+        for i in course_list:
+            print(new_df.iloc[i[0]]['course_name'])
+    except KeyError as e:
+        print(f"KeyError: {e}. Check if 'course_name' column exists in new_df.")
+        print("Current columns:", new_df.columns)
+    except IndexError:
+        print(f"IndexError: Course '{course}' not found or no matches in the dataset.")
+    except NameError:
+        print("NameError: 'similarity' matrix is not defined.")
+
+# Example usage
+recommend('Introduction to Cybersecurity Tools & Cyber Attacks')
+```
+
+3. The script will output recommendations for the specified course or list available courses if the input is not found.
+
+## Example Output
+For the input `Introduction to Cybersecurity Tools & Cyber Attacks`:
+```
+Recommendations for 'Introduction to Cybersecurity Tools & Cyber Attacks':
+Cybersecurity Roles Processes & Operating System Security
+Cyber Threat Intelligence
+Penetration Testing Incident Response and Forensics
+[Additional similar courses...]
+```
+
+If the course is not found:
+```
+Course 'Invalid Course Name' not found in the dataset.
+Available courses: ['Write A Feature Length Screenplay For Film Or Television', 'Business Strategy Business Model Canvas Analysis with Miro', ...]
+```
+
+## Notes
+- Ensure the course name matches exactly (case-sensitive) with the `course_name` column in `new_df`. Use `new_df['course_name'].values` to check available names.
+- The system uses `CountVectorizer` for simplicity, but `TfidfVectorizer` could be explored for potentially better results.
+- The dataset contains 3,522 courses, covering various domains and difficulty levels.
+
+## Future Improvements
+- Incorporate additional features (e.g., `Difficulty Level`) into the similarity metric.
+- Use more advanced NLP techniques, such as TF-IDF or word embeddings, for better text representation.
+- Add a user interface (e.g., web app) for easier interaction with the recommendation system.
+
+## License
+This project is for educational purposes and uses the Coursera dataset. Ensure compliance with any data usage policies from Coursera.
