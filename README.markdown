@@ -81,6 +81,3 @@ Available courses: ['Write A Feature Length Screenplay For Film Or Television', 
 - Incorporate additional features (e.g., `Difficulty Level`) into the similarity metric.
 - Use more advanced NLP techniques, such as TF-IDF or word embeddings, for better text representation.
 - Add a user interface (e.g., web app) for easier interaction with the recommendation system.
-
-## License
-This project is for educational purposes and uses the Coursera dataset. Ensure compliance with any data usage policies from Coursera.
