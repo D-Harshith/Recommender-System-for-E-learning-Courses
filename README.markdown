@@ -53,67 +53,7 @@ nltk.download('punkt')
 
 ## Usage
 1. Ensure the dataset (`Coursera.csv`) is in the same directory as the script.
-2. Run the Jupyter Notebook (`Recommender System for E-learning Courses.ipynb`) or execute the following consolidated Python script:
-
-```python
-import pandas as pd
-import nltk
-nltk.download('punkt')
-from nltk.stem.porter import PorterStemmer
-from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
-
-# Load and preprocess data
-df = pd.read_csv("Coursera.csv")
-df = df[['Course Name', 'Difficulty Level', 'Course Description', 'Skills']]
-df['Course Name'] = df['Course Name'].str.replace(' ', ',').str.replace(',,',',').str.replace(':','')
-df['Course Description'] = df['Course Description'].str.replace(' ', ',').str.replace(',,',',').str.replace('_','').str.replace(':','').str.replace('(','').str.replace(')','')
-df['Skills'] = df['Skills'].str.replace('(','').str.replace(')','')
-df['tags'] = df['Course Name'] + df['Difficulty Level'] + df['Course Description'] + df['Skills']
-
-# Prepare new_df
-new_df = df[['Course Name', 'tags']].copy()
-new_df['tags'] = new_df['tags'].str.replace(',', ' ')
-new_df['Course Name'] = new_df['Course Name'].str.replace(',', ' ')
-new_df = new_df.rename(columns={'Course Name': 'course_name'})
-new_df['tags'] = new_df['tags'].astype(str).apply(lambda x: x.lower())
-
-# Apply stemming
-ps = PorterStemmer()
-def stem(text):
-    return " ".join([ps.stem(i) for i in text.split()])
-new_df['tags'] = new_df['tags'].apply(stem)
-
-# Vectorization and similarity
-cv = CountVectorizer(max_features=5000, stop_words='english')
-vectors = cv.fit_transform(new_df['tags']).toarray()
-similarity = cosine_similarity(vectors)
-
-# Recommendation function
-def recommend(course):
-    try:
-        if course not in new_df['course_name'].values:
-            print(f"Course '{course}' not found in the dataset.")
-            print("Available courses:", new_df['course_name'].tolist())
-            return
-        course_index = new_df[new_df['course_name'] == course].index[0]
-        distances = similarity[course_index]
-        course_list = sorted(list(enumerate(distances)), reverse=True, key=lambda x: x[1])[1:7]
-        print(f"Recommendations for '{course}':")
-        for i in course_list:
-            print(new_df.iloc[i[0]]['course_name'])
-    except KeyError as e:
-        print(f"KeyError: {e}. Check if 'course_name' column exists in new_df.")
-        print("Current columns:", new_df.columns)
-    except IndexError:
-        print(f"IndexError: Course '{course}' not found or no matches in the dataset.")
-    except NameError:
-        print("NameError: 'similarity' matrix is not defined.")
-
-# Example usage
-recommend('Introduction to Cybersecurity Tools & Cyber Attacks')
-```
-
+2. Run the Jupyter Notebook (`Recommender System for E-learning Courses.ipynb`).
 3. The script will output recommendations for the specified course or list available courses if the input is not found.
 
 ## Example Output
